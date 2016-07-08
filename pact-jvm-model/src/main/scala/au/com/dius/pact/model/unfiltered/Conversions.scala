@@ -2,6 +2,7 @@ package au.com.dius.pact.model.unfiltered
 
 import java.io.{BufferedReader, InputStreamReader}
 import java.net.URI
+import java.util
 import java.util.zip.GZIPInputStream
 
 import au.com.dius.pact.model.{OptionalBody, Request, Response}
@@ -29,8 +30,13 @@ object Conversions extends StrictLogging {
       else
         org.apache.http.entity.ContentType.parse(response.getContentType)
     val charset = if (contentType.getCharset == null) "UTF-8" else contentType.getCharset.name()
-    val body = OptionalBody.body(response.getResponseBody(charset))
-    val r = new Response(response.getStatusCode, toMap(response.getHeaders), body)
+    val body = /*OptionalBody.body*/(response.getResponseBody(charset))
+    //val r = new Response(response.getStatusCode, toMap(response.getHeaders), body)
+    val responseMap = new util.HashMap[String, Any]()
+    responseMap.put("status", response.getStatusCode)
+    responseMap.put("headers", toMap(response.getHeaders))
+    responseMap.put("body", body)
+    val r = Response.fromMap(responseMap)
     logger.debug("response=" + r)
     r
   }
@@ -72,7 +78,15 @@ object Conversions extends StrictLogging {
   }
 
   implicit def unfilteredRequestToPactRequest(request: HttpRequest[ReceivedMessage]): Request = {
-    new Request(request.method, toPath(request.uri), toQuery(request), toHeaders(request),
-      OptionalBody.body(toBody(request)))
+    val requestMap = new util.HashMap[String, Any]()
+    requestMap.put("method", request.method)
+    requestMap.put("path", toPath(request.uri))
+    requestMap.put("query", toQuery(request))
+    requestMap.put("headers", toHeaders(request))
+    requestMap.put("body", toBody(request))
+    Request.fromMap(requestMap)
+
+    //new Request(request.method, toPath(request.uri), toQuery(request), toHeaders(request),
+    //  OptionalBody.body(toBody(request)))
   }
 }
